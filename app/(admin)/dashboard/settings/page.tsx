@@ -1,9 +1,7 @@
 "use client"
 
-import { Badge } from "@/components/ui/badge"
-
 import { useState } from "react"
-import { Shield, Bell, Mail, Globe, Database, Key, Save } from "lucide-react"
+import { Shield, Bell, Mail, Globe, Key, Save } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,6 +10,7 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { PlansConfig } from "@/components/settings/plans-config"
 
 export default function AdminSettingsPage() {
   const [saved, setSaved] = useState(false)
@@ -256,73 +255,7 @@ export default function AdminSettingsPage() {
 
         {/* Billing */}
         <TabsContent value="billing" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Database className="w-5 h-5" />
-                Plans et tarifs
-              </CardTitle>
-              <CardDescription>Configuration des plans d'abonnement</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="p-4 border rounded-lg space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium">Essentiel</h4>
-                  <Badge variant="outline" className="border-blue-300 bg-blue-50 text-blue-700">
-                    Actif
-                  </Badge>
-                </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Prix mensuel (FCFA)</Label>
-                    <Input type="number" defaultValue="10000" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Nombre max de chambres</Label>
-                    <Input type="number" defaultValue="20" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 border rounded-lg space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium">Multi</h4>
-                  <Badge variant="outline" className="border-violet-300 bg-violet-50 text-violet-700">
-                    Actif
-                  </Badge>
-                </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Prix mensuel (FCFA)</Label>
-                    <Input type="number" defaultValue="20000" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Nombre max d'établissements</Label>
-                    <Input type="number" defaultValue="5" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 border rounded-lg space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium">Premium Web</h4>
-                  <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700">
-                    Actif
-                  </Badge>
-                </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Prix mensuel (FCFA)</Label>
-                    <Input type="number" defaultValue="35000" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Chambres illimitées</Label>
-                    <Input defaultValue="Illimité" readOnly className="bg-muted" />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <PlansConfig />
 
           <Card>
             <CardHeader>

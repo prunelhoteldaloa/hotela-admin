@@ -248,6 +248,54 @@ export interface SubscriptionStats {
   monthlyRevenue: number;
 }
 
+// ─── Configuration des plans (AdminPlansController) ────────────────────────────
+
+export interface PlanFeatureConfig {
+  id: string;
+  planId: string;
+  featureKey: string;
+  label: string;
+  enabled: boolean;
+  displayValue: string | null;
+}
+
+export interface PlanConfig {
+  id: string;
+  key: string;
+  name: string;
+  monthlyPrice: number;
+  annualPrice: number;
+  maxRooms: number | null;
+  maxHotels: number | null;
+  isActive: boolean;
+  isPopular: boolean;
+  description: string | null;
+  sortOrder: number;
+  features: PlanFeatureConfig[];
+}
+
+export interface UpdatePlanPayload {
+  name?: string;
+  monthlyPrice?: number;
+  annualPrice?: number;
+  maxRooms?: number | null;
+  maxHotels?: number | null;
+  isActive?: boolean;
+  isPopular?: boolean;
+  description?: string | null;
+}
+
+export interface UpdatePlanFeaturePayload {
+  enabled: boolean;
+  displayValue?: string;
+}
+
+export interface CreatePlanFeaturePayload {
+  featureKey: string;
+  label: string;
+  enabled: boolean;
+}
+
 // ─── Query params ─────────────────────────────────────────────────────────────
 
 export interface HotelQuery extends PaginationQuery {
@@ -307,7 +355,7 @@ export const adminService = {
     return getApiClient().get("/admin/analytics/revenue-by-plan");
   },
 
-  // ── Hôtels ─────────────────────────────────────────────────────────────────
+  // ── Hôtels ──────────────────��──────────────────────────────────────────────
 
   getAllHotels(query: HotelQuery = {}): Promise<PaginatedResponse<AdminHotel>> {
     return getApiClient().get("/admin/hotels", { params: query });
@@ -429,5 +477,33 @@ export const adminService = {
     targetRole?: "OWNER" | "all";
   }): Promise<{ sent: number }> {
     return getApiClient().post("/admin/notifications/system", data);
+  },
+
+  // ── Configuration des plans (AdminPlansController) ───────────────────────────
+
+  getPlans(): Promise<PlanConfig[]> {
+    return getApiClient().get("/admin/plans");
+  },
+
+  updatePlan(key: string, data: UpdatePlanPayload): Promise<PlanConfig> {
+    return getApiClient().patch(`/admin/plans/${key}`, data);
+  },
+
+  updatePlanFeature(
+    key: string,
+    featureKey: string,
+    data: UpdatePlanFeaturePayload,
+  ): Promise<PlanFeatureConfig> {
+    return getApiClient().patch(
+      `/admin/plans/${key}/features/${featureKey}`,
+      data,
+    );
+  },
+
+  addPlanFeature(
+    key: string,
+    data: CreatePlanFeaturePayload,
+  ): Promise<PlanFeatureConfig> {
+    return getApiClient().post(`/admin/plans/${key}/features`, data);
   },
 };
