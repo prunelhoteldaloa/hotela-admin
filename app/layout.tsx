@@ -88,8 +88,10 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <Providers>
-            {/* <AuthProvider> */} {children} <Toaster />
-            {/* </AuthProvider>{" "} */}
+            <AuthProvider>
+              {children}
+              <Toaster />
+            </AuthProvider>
           </Providers>
         </ThemeProvider>
         <Analytics />

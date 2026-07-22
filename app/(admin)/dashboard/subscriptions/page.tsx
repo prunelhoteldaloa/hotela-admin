@@ -47,6 +47,7 @@ import {
 } from "@/components/ui/dialog";
 import { useAdmin } from "@/hooks/useAdmin";
 import type { SubscriptionPlan } from "@/services/admin.service";
+import { ALL_PLANS, planBadgeClassName, planLabel } from "@/lib/plans";
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat("fr-FR").format(amount) + " F";
@@ -58,12 +59,6 @@ const STATUS_MAP: Record<string, { label: string; className: string }> = {
   PAST_DUE: { label: "Impayé", className: "bg-red-100 text-red-700" },
   SUSPENDED: { label: "Suspendu", className: "bg-orange-100 text-orange-700" },
   CANCELLED: { label: "Annulé", className: "bg-slate-100 text-slate-700" },
-};
-
-const PLAN_STYLES: Record<SubscriptionPlan, string> = {
-  PREMIUM: "border-amber-300 bg-amber-50 text-amber-700",
-  MULTI: "border-violet-300 bg-violet-50 text-violet-700",
-  ESSENTIEL: "border-blue-300 bg-blue-50 text-blue-700",
 };
 
 export default function AdminSubscriptionsPage() {
@@ -228,9 +223,11 @@ export default function AdminSubscriptionsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous les plans</SelectItem>
-                <SelectItem value="ESSENTIEL">Essentiel</SelectItem>
-                <SelectItem value="MULTI">Multi</SelectItem>
-                <SelectItem value="PREMIUM">Premium</SelectItem>
+                {ALL_PLANS.map((plan) => (
+                  <SelectItem key={plan} value={plan}>
+                    {planLabel(plan)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -281,10 +278,9 @@ export default function AdminSubscriptionsPage() {
                         <TableCell>
                           <Badge
                             variant="outline"
-                            className={PLAN_STYLES[sub.plan]}
+                            className={planBadgeClassName(sub.plan)}
                           >
-                            {sub.plan.charAt(0) +
-                              sub.plan.slice(1).toLowerCase()}
+                            {planLabel(sub.plan)}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -390,11 +386,11 @@ export default function AdminSubscriptionsPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ESSENTIEL">
-                Essentiel — 10 000 F/mois
-              </SelectItem>
-              <SelectItem value="MULTI">Multi — 20 000 F/mois</SelectItem>
-              <SelectItem value="PREMIUM">Premium — 35 000 F/mois</SelectItem>
+              {ALL_PLANS.map((plan) => (
+                <SelectItem key={plan} value={plan}>
+                  {planLabel(plan)}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <DialogFooter>
