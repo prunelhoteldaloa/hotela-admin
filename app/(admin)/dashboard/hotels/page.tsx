@@ -54,26 +54,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdmin } from "@/hooks/useAdmin";
 import type { AdminHotel, SubscriptionPlan } from "@/services/admin.service";
-
-const PLAN_PRICES: Record<SubscriptionPlan, string> = {
-  ESSENTIEL: "10 000 F/mois",
-  MULTI: "20 000 F/mois",
-  PREMIUM: "35 000 F/mois",
-};
-
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("fr-FR").format(amount) + " F";
-}
+import { ALL_PLANS, planBadgeClassName, planLabel } from "@/lib/plans";
 
 function PlanBadge({ plan }: { plan: SubscriptionPlan }) {
-  const styles: Record<SubscriptionPlan, string> = {
-    PREMIUM: "border-amber-300 bg-amber-50 text-amber-700",
-    MULTI: "border-violet-300 bg-violet-50 text-violet-700",
-    ESSENTIEL: "border-blue-300 bg-blue-50 text-blue-700",
-  };
   return (
-    <Badge variant="outline" className={styles[plan]}>
-      {plan.charAt(0) + plan.slice(1).toLowerCase()}
+    <Badge variant="outline" className={planBadgeClassName(plan)}>
+      {planLabel(plan)}
     </Badge>
   );
 }
@@ -280,9 +266,11 @@ export default function AdminHotelsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous les plans</SelectItem>
-                <SelectItem value="ESSENTIEL">Essentiel</SelectItem>
-                <SelectItem value="MULTI">Multi</SelectItem>
-                <SelectItem value="PREMIUM">Premium</SelectItem>
+                {ALL_PLANS.map((plan) => (
+                  <SelectItem key={plan} value={plan}>
+                    {planLabel(plan)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -396,26 +384,17 @@ export default function AdminHotelsPage() {
                             >
                               Changer de plan
                             </DropdownMenuItem>
-                            {(
-                              [
-                                "ESSENTIEL",
-                                "MULTI",
-                                "PREMIUM",
-                              ] as SubscriptionPlan[]
-                            )
-                              .filter(
-                                (p) => p !== hotel.owner.subscription?.plan,
-                              )
-                              .map((plan) => (
-                                <DropdownMenuItem
-                                  key={plan}
-                                  onClick={() => handleChangePlan(hotel, plan)}
-                                  disabled={hotelMutating}
-                                >
-                                  →{" "}
-                                  {plan.charAt(0) + plan.slice(1).toLowerCase()}
-                                </DropdownMenuItem>
-                              ))}
+                            {ALL_PLANS.filter(
+                              (p) => p !== hotel.owner.subscription?.plan,
+                            ).map((plan) => (
+                              <DropdownMenuItem
+                                key={plan}
+                                onClick={() => handleChangePlan(hotel, plan)}
+                                disabled={hotelMutating}
+                              >
+                                → {planLabel(plan)}
+                              </DropdownMenuItem>
+                            ))}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -538,11 +517,13 @@ export default function AdminHotelsPage() {
                         Plan actuel
                       </Label>
                       <p className="mt-1 text-xl font-bold">
-                        {selectedHotel.owner.subscription?.plan ?? "—"}
+                        {planLabel(selectedHotel.owner.subscription?.plan)}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {selectedHotel.owner.subscription?.plan
-                          ? PLAN_PRICES[selectedHotel.owner.subscription.plan]
+                        {selectedHotel.owner.subscription?.amount != null
+                          ? `${new Intl.NumberFormat("fr-FR").format(
+                              selectedHotel.owner.subscription.amount,
+                            )} F/mois`
                           : ""}
                       </p>
                     </div>

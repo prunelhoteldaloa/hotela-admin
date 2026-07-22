@@ -8,10 +8,9 @@ import type {
   AdminUser,
   AdminStay,
   ActionLog,
-  SaasAdmin,
-  SaasFeature,
-  PlanCatalog,
-  PlanDetail,
+  SuperAdmin,
+  CountryAdmin,
+  AdminCountry,
   RevenueMonth,
   RevenueByPlan,
   SubscriptionStats,
@@ -213,123 +212,83 @@ export function useAdmin() {
     [logsState.execute],
   );
 
-  // ── Admins SaaS ────────────────────────────────────────────────────────────
+  // ── Super Admins ─────────────────────────────────────────────────────────────
 
-  const adminsState = useAsync<SaasAdmin[]>();
-  const [adminMutating, setAdminMutating] = useState(false);
+  const superAdminsState = useAsync<SuperAdmin[]>();
+  const [superAdminMutating, setSuperAdminMutating] = useState(false);
 
-  const fetchSaasAdmins = useCallback(() => {
-    return adminsState.execute(() => adminService.getSaasAdmins());
-  }, [adminsState.execute]);
+  const fetchSuperAdmins = useCallback(() => {
+    return superAdminsState.execute(() => adminService.getSuperAdmins());
+  }, [superAdminsState.execute]);
 
-  const promoteSaasAdmin = useCallback(
+  const promoteSuperAdmin = useCallback(
     async (userId: string, onSuccess?: () => void) => {
-      setAdminMutating(true);
+      setSuperAdminMutating(true);
       try {
-        await adminService.promoteSaasAdmin(userId);
+        await adminService.promoteSuperAdmin(userId);
         onSuccess?.();
       } finally {
-        setAdminMutating(false);
+        setSuperAdminMutating(false);
       }
     },
     [],
   );
 
-  const revokeSaasAdmin = useCallback(
+  const revokeSuperAdmin = useCallback(
     async (userId: string, onSuccess?: () => void) => {
-      setAdminMutating(true);
+      setSuperAdminMutating(true);
       try {
-        await adminService.revokeSaasAdmin(userId);
+        await adminService.revokeSuperAdmin(userId);
         onSuccess?.();
       } finally {
-        setAdminMutating(false);
+        setSuperAdminMutating(false);
       }
     },
     [],
   );
 
-  // ── Catalogue plans ────────────────────────────────────────────────────────
+  // ── Country Admins ───────────────────────────────────────────────────────────
 
-  const plansCatalogState = useAsync<PlanCatalog[]>();
-  const planDetailState = useAsync<PlanDetail>();
+  const countryAdminsState = useAsync<CountryAdmin[]>();
+  const [countryAdminMutating, setCountryAdminMutating] = useState(false);
 
-  const fetchPlansCatalog = useCallback(() => {
-    return plansCatalogState.execute(() => adminService.getPlansCatalog());
-  }, [plansCatalogState.execute]);
+  const fetchCountryAdmins = useCallback(() => {
+    return countryAdminsState.execute(() => adminService.getCountryAdmins());
+  }, [countryAdminsState.execute]);
 
-  const fetchPlanDetail = useCallback(
-    (plan: SubscriptionPlan) => {
-      return planDetailState.execute(() => adminService.getPlanDetail(plan));
-    },
-    [planDetailState.execute],
-  );
-
-  // ── Catalogue features ─────────────────────────────────────────────────────
-
-  const featuresState = useAsync<SaasFeature[]>();
-  const [featureMutating, setFeatureMutating] = useState(false);
-
-  const fetchFeatures = useCallback(() => {
-    return featuresState.execute(() => adminService.getFeaturesCatalog());
-  }, [featuresState.execute]);
-
-  const createFeature = useCallback(
-    async (
-      data: {
-        name: string;
-        description: string;
-        plans: SubscriptionPlan[];
-        enabled?: boolean;
-      },
-      onSuccess?: (feature: SaasFeature) => void,
-    ) => {
-      setFeatureMutating(true);
+  const promoteCountryAdmin = useCallback(
+    async (userId: string, countryId: string, onSuccess?: () => void) => {
+      setCountryAdminMutating(true);
       try {
-        const feature = await adminService.createFeature(data);
-        onSuccess?.(feature);
-        return feature;
-      } finally {
-        setFeatureMutating(false);
-      }
-    },
-    [],
-  );
-
-  const updateFeature = useCallback(
-    async (
-      id: string,
-      data: {
-        name?: string;
-        description?: string;
-        plans?: SubscriptionPlan[];
-        enabled?: boolean;
-      },
-      onSuccess?: (feature: SaasFeature) => void,
-    ) => {
-      setFeatureMutating(true);
-      try {
-        const feature = await adminService.updateFeature(id, data);
-        onSuccess?.(feature);
-        return feature;
-      } finally {
-        setFeatureMutating(false);
-      }
-    },
-    [],
-  );
-
-  const deleteFeature = useCallback(
-    async (id: string, onSuccess?: () => void) => {
-      setFeatureMutating(true);
-      try {
-        await adminService.deleteFeature(id);
+        await adminService.promoteCountryAdmin(userId, countryId);
         onSuccess?.();
       } finally {
-        setFeatureMutating(false);
+        setCountryAdminMutating(false);
       }
     },
     [],
   );
+
+  const revokeCountryAdmin = useCallback(
+    async (userId: string, onSuccess?: () => void) => {
+      setCountryAdminMutating(true);
+      try {
+        await adminService.revokeCountryAdmin(userId);
+        onSuccess?.();
+      } finally {
+        setCountryAdminMutating(false);
+      }
+    },
+    [],
+  );
+
+  // ── Pays ───────────────────────────────────────────────────────────────────
+
+  const countriesState = useAsync<AdminCountry[]>();
+
+  const fetchCountries = useCallback(() => {
+    return countriesState.execute(() => adminService.getAllCountries());
+  }, [countriesState.execute]);
 
   // ── Notifications système ──────────────────────────────────────────────────
 
@@ -398,11 +357,13 @@ export function useAdmin() {
     // Paiements
     payments: paymentsState.data,
     paymentsLoading: paymentsState.loading,
+    paymentsError: paymentsState.error,
     fetchPayments,
 
     // Utilisateurs
     users: usersState.data,
     usersLoading: usersState.loading,
+    usersError: usersState.error,
     fetchUsers,
 
     // Séjours
@@ -413,32 +374,29 @@ export function useAdmin() {
     // Journaux
     logs: logsState.data,
     logsLoading: logsState.loading,
+    logsError: logsState.error,
     fetchLogs,
 
-    // Admins SaaS
-    saasAdmins: adminsState.data,
-    saasAdminsLoading: adminsState.loading,
-    fetchSaasAdmins,
-    adminMutating,
-    promoteSaasAdmin,
-    revokeSaasAdmin,
+    // Super Admins
+    superAdmins: superAdminsState.data,
+    superAdminsLoading: superAdminsState.loading,
+    fetchSuperAdmins,
+    superAdminMutating,
+    promoteSuperAdmin,
+    revokeSuperAdmin,
 
-    // Catalogue plans
-    plansCatalog: plansCatalogState.data,
-    plansCatalogLoading: plansCatalogState.loading,
-    fetchPlansCatalog,
-    planDetail: planDetailState.data,
-    planDetailLoading: planDetailState.loading,
-    fetchPlanDetail,
+    // Country Admins
+    countryAdmins: countryAdminsState.data,
+    countryAdminsLoading: countryAdminsState.loading,
+    fetchCountryAdmins,
+    countryAdminMutating,
+    promoteCountryAdmin,
+    revokeCountryAdmin,
 
-    // Catalogue features
-    features: featuresState.data,
-    featuresLoading: featuresState.loading,
-    fetchFeatures,
-    featureMutating,
-    createFeature,
-    updateFeature,
-    deleteFeature,
+    // Pays
+    countries: countriesState.data,
+    countriesLoading: countriesState.loading,
+    fetchCountries,
 
     // Notifications
     notifSending,

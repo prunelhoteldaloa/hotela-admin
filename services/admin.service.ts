@@ -1,8 +1,17 @@
 import { getApiClient } from "@/lib/api-client";
 
-// ─── Enums ────────────────────────────────────────────────────────────────────
+// ─── Enums (alignés sur le schéma Prisma du backend) ───────────────────────────
 
-export type SubscriptionPlan = "ESSENTIEL" | "MULTI" | "PREMIUM";
+export type SubscriptionPlan =
+  // Anciens identifiants (rétrocompatibilité)
+  | "ESSENTIEL"
+  | "MULTI"
+  | "PREMIUM"
+  // Nouvelle grille (4 packs)
+  | "LIGHT"
+  | "STARTER"
+  | "BUSINESS"
+  | "CORPORATE";
 
 export type SubscriptionStatus =
   | "ACTIVE"
@@ -11,85 +20,18 @@ export type SubscriptionStatus =
   | "SUSPENDED"
   | "CANCELLED";
 
-export type UserRole = "ADMIN" | "OWNER" | "MANAGER" | "RECEPTIONIST";
+export type UserRole =
+  | "SUPER_ADMIN"
+  | "COUNTRY_ADMIN"
+  | "ADMIN"
+  | "OWNER"
+  | "MANAGER"
+  | "RECEPTIONIST"
+  | "CASHIER";
 
 export type StayStatus = "IN_PROGRESS" | "COMPLETED" | "EXTENDED" | "CANCELLED";
 
-export type ActionLogType =
-  | "AUTH_LOGIN"
-  | "AUTH_LOGOUT"
-  | "AUTH_PASSWORD_RESET"
-  | "AUTH_EMAIL_VERIFIED"
-  | "USER_CREATED"
-  | "USER_UPDATED"
-  | "USER_DELETED"
-  | "USER_ROLE_CHANGED"
-  | "HOTEL_CREATED"
-  | "HOTEL_UPDATED"
-  | "HOTEL_DELETED"
-  | "ROOM_TYPE_CREATED"
-  | "ROOM_TYPE_UPDATED"
-  | "ROOM_TYPE_DELETED"
-  | "ROOM_CREATED"
-  | "ROOM_UPDATED"
-  | "ROOM_DELETED"
-  | "ROOM_STATUS_CHANGED"
-  | "ROOM_STATUS_TO_AVAILABLE"
-  | "ROOM_STATUS_TO_OCCUPIED"
-  | "ROOM_STATUS_TO_CLEANING"
-  | "ROOM_STATUS_TO_MAINTENANCE"
-  | "RESERVATION_CREATED"
-  | "RESERVATION_UPDATED"
-  | "RESERVATION_STATUS_CHANGED"
-  | "RESERVATION_STATUS_TO_PENDING"
-  | "RESERVATION_STATUS_TO_CONFIRMED"
-  | "RESERVATION_STATUS_TO_COMPLETED"
-  | "RESERVATION_STATUS_TO_CANCELLED"
-  | "RESERVATION_STATUS_TO_NO_SHOW"
-  | "STAY_STARTED"
-  | "STAY_EXTENDED"
-  | "STAY_COMPLETED"
-  | "STAY_CANCELLED"
-  | "STAY_STATUS_CHANGED"
-  | "STAY_STATUS_TO_IN_PROGRESS"
-  | "STAY_STATUS_TO_EXTENDED"
-  | "STAY_STATUS_TO_COMPLETED"
-  | "STAY_STATUS_TO_CANCELLED"
-  | "INVOICE_CREATED"
-  | "INVOICE_UPDATED"
-  | "INVOICE_STATUS_CHANGED"
-  | "INVOICE_STATUS_TO_PENDING"
-  | "INVOICE_STATUS_TO_PARTIAL"
-  | "INVOICE_STATUS_TO_PAID"
-  | "INVOICE_STATUS_TO_OVERDUE"
-  | "INVOICE_STATUS_TO_CANCELLED"
-  | "CLIENT_CREATED"
-  | "CLIENT_UPDATED"
-  | "CLIENT_DELETED"
-  | "CLIENT_VIP_STATUS_CHANGED"
-  | "CLIENT_VIP_TO_STANDARD"
-  | "CLIENT_VIP_TO_SILVER"
-  | "CLIENT_VIP_TO_GOLD"
-  | "CLIENT_VIP_TO_PLATINUM"
-  | "CLIENT_NEWSLETTER_OPT_IN"
-  | "CLIENT_NEWSLETTER_OPT_OUT"
-  | "API_KEY_CREATED"
-  | "API_KEY_REVOKED"
-  | "API_KEY_ACCESSED"
-  | "NEWSLETTER_CREATED"
-  | "NEWSLETTER_UPDATED"
-  | "WEBSITE_CREATED"
-  | "WEBSITE_UPDATED"
-  | "SUBSCRIPTION_CREATED"
-  | "SUBSCRIPTION_PLAN_CHANGED"
-  | "SUBSCRIPTION_PAYMENT_FAILED"
-  | "SUBSCRIPTION_STATUS_CHANGED"
-  | "SUBSCRIPTION_STATUS_TO_TRIAL"
-  | "SUBSCRIPTION_STATUS_TO_ACTIVE"
-  | "SUBSCRIPTION_STATUS_TO_PAST_DUE"
-  | "SUBSCRIPTION_STATUS_TO_SUSPENDED"
-  | "SUBSCRIPTION_STATUS_TO_CANCELLED"
-  | "SYSTEM_ERROR";
+export type ActionLogType = string;
 
 // ─── Types communs ────────────────────────────────────────────────────────────
 
@@ -110,6 +52,11 @@ export interface PaginationQuery {
   limit?: number;
 }
 
+export interface CountryRef {
+  id: string;
+  name: string;
+}
+
 // ─── Types métier ─────────────────────────────────────────────────────────────
 
 export interface DashboardStats {
@@ -125,17 +72,16 @@ export interface DashboardStats {
     totalClients: number;
     totalStays: number;
     totalInvoices: number;
+    totalCountryAdmins: number;
+    totalSuperAdmins: number;
   };
   revenue: {
     monthlyRecurringRevenue: number;
     lastMonthRevenue: number;
     mrrGrowthPercent: number | null;
   };
-  planDistribution: {
-    essentiel: number;
-    multi: number;
-    premium: number;
-  };
+  /** Dictionnaire dynamique : clé = plan en minuscules, valeur = nombre d'abonnements */
+  planDistribution: Record<string, number>;
   recentHotels: AdminHotel[];
   recentPayments: AdminPayment[];
 }
@@ -152,17 +98,23 @@ export interface AdminHotel {
     id: string;
     name: string;
     email: string;
+    phone?: string;
     subscription?: {
       plan: SubscriptionPlan;
       status: SubscriptionStatus;
-      amount: number;
-      billingCycle: string;
+      amount?: number;
+      billingCycle?: string;
       currentPeriodEnd: string;
       trialEndsAt: string | null;
-    };
+    } | null;
   };
-  city: { name: string; country: { name: string } };
-  _count: { rooms: number; reservations: number; clients: number };
+  city: { name: string; country: { id: string; name: string } };
+  _count: {
+    rooms: number;
+    reservations: number;
+    clients: number;
+    stays?: number;
+  };
 }
 
 export interface AdminSubscription {
@@ -179,7 +131,12 @@ export interface AdminSubscription {
     id: string;
     name: string;
     email: string;
-    ownedHotels: { id: string; name: string }[];
+    phone?: string;
+    ownedHotels: {
+      id: string;
+      name: string;
+      city?: { name: string; country: { name: string } };
+    }[];
   };
   payments: AdminPayment[];
 }
@@ -190,9 +147,11 @@ export interface AdminPayment {
   currency: string;
   status: string;
   paymentMethod: string;
+  description?: string | null;
+  transactionId?: string | null;
   createdAt: string;
   subscription: {
-    plan: SubscriptionPlan;
+    plan?: SubscriptionPlan;
     user: { id: string; name: string; email: string };
   };
 }
@@ -201,27 +160,29 @@ export interface AdminUser {
   id: string;
   name: string;
   email: string;
+  phone?: string | null;
   role: UserRole;
   createdAt: string;
   hotel: { id: string; name: string } | null;
-  ownedHotels: { id: string; name: string }[];
+  ownedHotels: {
+    id: string;
+    name: string;
+    city?: { name: string; country: { name: string } };
+  }[];
+  country: CountryRef | null;
   subscription: {
     plan: SubscriptionPlan;
     status: SubscriptionStatus;
     currentPeriodEnd: string;
+    trialEndsAt: string | null;
   } | null;
 }
 
 export interface AdminStay {
   id: string;
-  stayNumber: string;
-  guestName: string;
-  guestEmail: string;
   startDate: string;
   endDate: string;
   status: StayStatus;
-  totalAmount: number;
-  paidAmount: number;
   hotel: { id: string; name: string };
   room: { id: string; number: string };
   client: { id: string; name: string; email: string } | null;
@@ -233,41 +194,36 @@ export interface ActionLog {
   entity: string;
   entityId: string | null;
   details: Record<string, unknown> | null;
-  ipAddress: string | null;
   createdAt: string;
-  user: { id: string; name: string; email: string } | null;
+  user: { id: string; name: string; email: string; role?: UserRole } | null;
   hotel: { id: string; name: string } | null;
 }
 
-export interface SaasAdmin {
+export interface SuperAdmin {
   id: string;
   name: string;
   email: string;
-  createdAt: string;
+  role: UserRole;
   isSaasAdmin: boolean;
+  createdAt: string;
 }
 
-export interface SaasFeature {
+export interface CountryAdmin {
   id: string;
   name: string;
-  description: string;
-  enabled: boolean;
-  plans: SubscriptionPlan[];
+  email: string;
+  role: UserRole;
+  createdAt: string;
+  country: CountryRef | null;
+}
+
+export interface AdminCountry {
+  id: string;
+  name: string;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface PlanCatalog {
-  plan: SubscriptionPlan;
-  activeSubscribers: number;
-  trialSubscribers: number;
-  totalRevenue: number;
-}
-
-export interface PlanDetail extends PlanCatalog {
-  subscriptions: AdminSubscription[];
-  totalPayments: number;
-  statusBreakdown: Record<string, number>;
+  _count: { cities: number };
+  admins: { id: string; name: string; email: string }[];
 }
 
 export interface RevenueMonth {
@@ -298,6 +254,7 @@ export interface HotelQuery extends PaginationQuery {
   status?: string;
   plan?: string;
   search?: string;
+  countryId?: string;
 }
 
 export interface SubscriptionQuery extends PaginationQuery {
@@ -314,14 +271,22 @@ export interface PaymentQuery extends PaginationQuery {
 export interface UserQuery extends PaginationQuery {
   role?: string;
   search?: string;
+  countryId?: string;
 }
 
 export interface LogQuery extends PaginationQuery {
   hotelId?: string;
   type?: string;
+  userId?: string;
+}
+
+export interface HotelsByCountryResponse extends PaginatedResponse<AdminHotel> {
+  country: { id: string; name: string };
 }
 
 // ─── Service ──────────────────────────────────────────────────────────────────
+// Toutes les routes sont préfixées par la base URL configurée (ex: /v1),
+// puis /admin/... conformément au AdminController NestJS.
 
 export const adminService = {
   // ── Dashboard ──────────────────────────────────────────────────────────────
@@ -407,59 +372,52 @@ export const adminService = {
     return getApiClient().get("/admin/logs", { params: query });
   },
 
-  // ── Admins SaaS ────────────────────────────────────────────────────────────
+  // ── Super Admins (SUPER_ADMIN = admins SaaS) ─────────────────────────────────
 
-  getSaasAdmins(): Promise<SaasAdmin[]> {
-    return getApiClient().get("/admin/admins");
+  getSuperAdmins(): Promise<SuperAdmin[]> {
+    return getApiClient().get("/admin/super-admins");
   },
 
-  promoteSaasAdmin(userId: string): Promise<SaasAdmin> {
-    return getApiClient().post(`/admin/admins/${userId}/promote`);
+  promoteSuperAdmin(userId: string): Promise<SuperAdmin> {
+    return getApiClient().post(`/admin/super-admins/${userId}/promote`);
   },
 
-  revokeSaasAdmin(userId: string): Promise<SaasAdmin> {
-    return getApiClient().post(`/admin/admins/${userId}/revoke`);
+  revokeSuperAdmin(userId: string): Promise<SuperAdmin> {
+    return getApiClient().post(`/admin/super-admins/${userId}/revoke`);
   },
 
-  // ── Catalogue plans ────────────────────────────────────────────────────────
+  // ── Country Admins ───────────────────────────────────────────────────────────
 
-  getPlansCatalog(): Promise<PlanCatalog[]> {
-    return getApiClient().get("/admin/catalog/plans");
+  getCountryAdmins(): Promise<CountryAdmin[]> {
+    return getApiClient().get("/admin/country-admins");
   },
 
-  getPlanDetail(plan: SubscriptionPlan): Promise<PlanDetail> {
-    return getApiClient().get(`/admin/catalog/plans/${plan}`);
+  promoteCountryAdmin(
+    userId: string,
+    countryId: string,
+  ): Promise<CountryAdmin> {
+    return getApiClient().post(`/admin/country-admins/${userId}/promote`, {
+      countryId,
+    });
   },
 
-  // ── Catalogue features ─────────────────────────────────────────────────────
-
-  getFeaturesCatalog(): Promise<SaasFeature[]> {
-    return getApiClient().get("/admin/catalog/features");
+  revokeCountryAdmin(userId: string): Promise<CountryAdmin> {
+    return getApiClient().post(`/admin/country-admins/${userId}/revoke`);
   },
 
-  createFeature(data: {
-    name: string;
-    description: string;
-    plans: SubscriptionPlan[];
-    enabled?: boolean;
-  }): Promise<SaasFeature> {
-    return getApiClient().post("/admin/catalog/features", data);
+  // ── Pays ─────────────────────────────────────────────────────────────────────
+
+  getAllCountries(): Promise<AdminCountry[]> {
+    return getApiClient().get("/admin/countries");
   },
 
-  updateFeature(
-    id: string,
-    data: {
-      name?: string;
-      description?: string;
-      plans?: SubscriptionPlan[];
-      enabled?: boolean;
-    },
-  ): Promise<SaasFeature> {
-    return getApiClient().patch(`/admin/catalog/features/${id}`, data);
-  },
-
-  deleteFeature(id: string): Promise<{ message: string }> {
-    return getApiClient().delete(`/admin/catalog/features/${id}`);
+  getHotelsByCountry(
+    countryId: string,
+    query: { page?: number; limit?: number; search?: string } = {},
+  ): Promise<HotelsByCountryResponse> {
+    return getApiClient().get(`/admin/countries/${countryId}/hotels`, {
+      params: query,
+    });
   },
 
   // ── Notifications système ──────────────────────────────────────────────────
