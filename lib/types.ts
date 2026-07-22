@@ -1,4 +1,11 @@
-export type UserRole = "ADMIN" | "MANAGER" | "OWNER" | "RECEPTIONIST";
+export type UserRole =
+  | "SUPER_ADMIN"
+  | "COUNTRY_ADMIN"
+  | "ADMIN"
+  | "MANAGER"
+  | "OWNER"
+  | "RECEPTIONIST"
+  | "CASHIER";
 export interface Room {
   id: string;
   number: string;
