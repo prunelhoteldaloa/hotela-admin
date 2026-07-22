@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdmin } from "@/hooks/useAdmin";
+import { planColor, planLabel } from "@/lib/plans";
 import {
   BarChart,
   Bar,
@@ -43,12 +44,6 @@ import {
   LineChart,
   Line,
 } from "recharts";
-
-const PLAN_COLORS = {
-  essentiel: "#3b82f6",
-  multi: "#8b5cf6",
-  premium: "#f59e0b",
-};
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat("fr-FR").format(amount) + " F";
@@ -103,23 +98,13 @@ export default function AdminDashboardPage() {
   }, [period]);
 
   const planData = dashboard
-    ? [
-        {
-          name: "Essentiel",
-          value: dashboard.planDistribution.essentiel,
-          color: PLAN_COLORS.essentiel,
-        },
-        {
-          name: "Multi",
-          value: dashboard.planDistribution.multi,
-          color: PLAN_COLORS.multi,
-        },
-        {
-          name: "Premium",
-          value: dashboard.planDistribution.premium,
-          color: PLAN_COLORS.premium,
-        },
-      ]
+    ? Object.entries(dashboard.planDistribution)
+        .filter(([, value]) => (value ?? 0) > 0)
+        .map(([key, value]) => ({
+          name: planLabel(key.toUpperCase()),
+          value,
+          color: planColor(key.toUpperCase()),
+        }))
     : [];
 
   if (dashboardError) {
@@ -523,8 +508,8 @@ export default function AdminDashboardPage() {
                         <p className="font-medium">
                           {payment.subscription.user.name}
                         </p>
-                        <p className="text-sm text-muted-foreground capitalize">
-                          Plan {payment.subscription.plan.toLowerCase()}
+                        <p className="text-sm text-muted-foreground">
+                          Plan {planLabel(payment.subscription.plan)}
                         </p>
                       </div>
                     </div>
