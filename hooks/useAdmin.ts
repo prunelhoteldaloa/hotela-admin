@@ -22,6 +22,10 @@ import type {
   LogQuery,
   PaginationQuery,
   SubscriptionPlan,
+  PlanConfig,
+  UpdatePlanPayload,
+  UpdatePlanFeaturePayload,
+  CreatePlanFeaturePayload,
 } from "../services/admin.service";
 
 // ─── Helper générique ─────────────────────────────────────────────────────────
@@ -290,6 +294,63 @@ export function useAdmin() {
     return countriesState.execute(() => adminService.getAllCountries());
   }, [countriesState.execute]);
 
+  // ── Configuration des plans ──────────────────────────────────────────────────
+
+  const plansState = useAsync<PlanConfig[]>();
+  const [planMutating, setPlanMutating] = useState(false);
+
+  const fetchPlans = useCallback(() => {
+    return plansState.execute(() => adminService.getPlans());
+  }, [plansState.execute]);
+
+  const updatePlan = useCallback(
+    async (key: string, data: UpdatePlanPayload, onSuccess?: () => void) => {
+      setPlanMutating(true);
+      try {
+        await adminService.updatePlan(key, data);
+        onSuccess?.();
+      } finally {
+        setPlanMutating(false);
+      }
+    },
+    [],
+  );
+
+  const updatePlanFeature = useCallback(
+    async (
+      key: string,
+      featureKey: string,
+      data: UpdatePlanFeaturePayload,
+      onSuccess?: () => void,
+    ) => {
+      setPlanMutating(true);
+      try {
+        await adminService.updatePlanFeature(key, featureKey, data);
+        onSuccess?.();
+      } finally {
+        setPlanMutating(false);
+      }
+    },
+    [],
+  );
+
+  const addPlanFeature = useCallback(
+    async (
+      key: string,
+      data: CreatePlanFeaturePayload,
+      onSuccess?: () => void,
+    ) => {
+      setPlanMutating(true);
+      try {
+        await adminService.addPlanFeature(key, data);
+        onSuccess?.();
+      } finally {
+        setPlanMutating(false);
+      }
+    },
+    [],
+  );
+
   // ── Notifications système ──────────────────────────────────────────────────
 
   const [notifSending, setNotifSending] = useState(false);
@@ -397,6 +458,16 @@ export function useAdmin() {
     countries: countriesState.data,
     countriesLoading: countriesState.loading,
     fetchCountries,
+
+    // Configuration des plans
+    plans: plansState.data,
+    plansLoading: plansState.loading,
+    plansError: plansState.error,
+    fetchPlans,
+    planMutating,
+    updatePlan,
+    updatePlanFeature,
+    addPlanFeature,
 
     // Notifications
     notifSending,
